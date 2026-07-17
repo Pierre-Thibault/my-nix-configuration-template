@@ -13,7 +13,7 @@ Modules under `modules/` are imported automatically using [`my-lib`](https://git
 Initialize a new configuration from this template:
 
 ```sh
-nix flake init -t github:Pierre-Thibault/my-nix-configuration-template#nixos-26.05
+nix flake init -t 'github:Pierre-Thibault/my-nix-configuration-template#nixos-26.05'
 ```
 
 Then edit `config/userdata.nix` with your system's details:

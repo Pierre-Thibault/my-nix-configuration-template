@@ -2,6 +2,9 @@
   outputs =
     { ... }:
     {
-      templates."nixos-26.05".path = ./nixos-26.05;
+      templates = {
+        "nixos-26.05".path = ./nixos-26.05;
+        default.path = ./nixos-26.05;
+      };
     };
 }
