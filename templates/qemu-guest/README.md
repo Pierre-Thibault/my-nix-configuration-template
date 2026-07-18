@@ -57,7 +57,7 @@ Both templates read per-host data from `config/userdata.nix`:
   system = "x86_64-linux";      # or "aarch64-linux"
   mainDisk = "/dev/sda";        # qemu-guest only; /dev/vda on some providers
   opensshKeys = [ "ssh-ed25519 AAAA..." ];
-  stateVersion = "26.05";       # set once at install time, never change
+  systemStateVersion = "26.05";       # set once at install time, never change
 
   # qemu-guest only, optional: SSH destination for install/deploy.
   # Defaults to `hostname` — useful with a matching Host block in
