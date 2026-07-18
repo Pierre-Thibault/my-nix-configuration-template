@@ -24,13 +24,54 @@
       userdata = import ./config/userdata.nix;
       inherit (userdata) system;
       pkgs = nixpkgs.legacyPackages.${system};
+      targetHost = userdata.targetHost or userdata.hostname;
     in
     {
       devShells.${system}.default = pkgs.mkShell {
-        packages = with nixpkgs.legacyPackages.${system}; [
+        packages = with pkgs; [
           nixos-anywhere
         ];
+        shellHook = ''
+          echo ""
+          echo "  ${userdata.hostname} — deployment commands:"
+          echo ""
+          echo "    nix run .#install   First-time install via nixos-anywhere (REPARTITIONS THE DISK)"
+          echo "    nix run .#deploy    Rebuild and switch the remote host"
+          echo ""
+        '';
       };
+
+      apps.${system} = {
+        install = {
+          type = "app";
+          meta.description = "First-time install via nixos-anywhere (REPARTITIONS THE DISK)";
+          program = nixpkgs.lib.getExe (
+            pkgs.writeShellApplication {
+              name = "install";
+              runtimeInputs = [ pkgs.nixos-anywhere ];
+              text = ''
+                nixos-anywhere --flake ".#${userdata.hostname}" "root@${targetHost}"
+              '';
+            }
+          );
+        };
+        deploy = {
+          type = "app";
+          meta.description = "Rebuild and switch the remote host";
+          program = nixpkgs.lib.getExe (
+            pkgs.writeShellApplication {
+              name = "deploy";
+              runtimeInputs = [ pkgs.nixos-rebuild ];
+              text = ''
+                nixos-rebuild switch \
+                  --flake ".#${userdata.hostname}" \
+                  --target-host "root@${targetHost}"
+              '';
+            }
+          );
+        };
+      };
+
       nixosConfigurations.${userdata.hostname} = nixpkgs.lib.nixosSystem {
         inherit system;
         modules = [
