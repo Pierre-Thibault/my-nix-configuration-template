@@ -1,11 +1,17 @@
 {
   outputs =
-    { ... }:
+    { self, ... }:
     {
       templates = {
-        "nixos-26.05".path = ./templates/nixos-26.05;
-        default.path = ./templates/nixos-26.05;
-        "qemu-guest.nix".path = ./templates/qemu-guest.nix;
+        "desktop" = {
+          path = ./templates/desktop;
+          description = "Desktop NixOS configuration with automatic module importation";
+        };
+        qemu-guest = {
+          path = ./templates/qemu-guest;
+          description = "NixOS for KVM/QEMU cloud VMs via nixos-anywhere (disko, GRUB hybrid)";
+        };
+        default = self.templates.qemu-guest;
       };
     };
 }

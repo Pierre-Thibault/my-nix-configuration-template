@@ -1,50 +1,70 @@
 # my-nix-configuration-template
 
-A [Nix flake template](https://nix.dev/manual/nix/stable/command-ref/new-cli/nix3-flake-init) for bootstrapping a NixOS configuration with automatic module importation.
+Flake templates for NixOS configurations with automatic module
+importation (via [nix-lib](https://github.com/Pierre-Thibault/nix-lib)).
 
-## What it provides
+## Templates
 
-The `nixos-26.05` template sets up a flake-based NixOS configuration built on `nixpkgs` `nixos-26.05`, alongside an `unstable` channel available via `nixpkgs-unstable` for packages you want to pull from `nixos-unstable`.
+### `qemu-guest` (default)
 
-Modules under `modules/` are imported automatically using [`my-lib`](https://github.com/Pierre-Thibault/nix-lib), so you don't need to list every module by hand in `configuration.nix`.
+NixOS for KVM/QEMU cloud virtual machines, deployed remotely with
+[nixos-anywhere](https://github.com/nix-community/nixos-anywhere):
 
-## Usage
+- [disko](https://github.com/nix-community/disko) declarative disk
+  layout (GPT, hybrid BIOS/UEFI boot with GRUB `efiInstallAsRemovable`)
+- `qemu-guest` profile (virtio drivers in the initrd)
+- OpenSSH enabled, root access by SSH key only
+- Dev shell providing `nixos-anywhere`
 
-Initialize a new configuration from this template:
-
-```sh
-nix flake init -t 'github:Pierre-Thibault/my-nix-configuration-template#nixos-26.05'
+```bash
+nix flake init -t github:Pierre-Thibault/my-nix-configuration-template#qemu-guest
+# or, since it is the default template:
+nix flake init -t github:Pierre-Thibault/my-nix-configuration-template
 ```
 
-Then edit `config/userdata.nix` with your system's details:
+First deployment (repartitions the target disk!):
+
+```bash
+nix develop
+nixos-anywhere --flake .#<hostname> root@<ip>
+```
+
+Subsequent updates:
+
+```bash
+nixos-rebuild switch --flake .#<hostname> --target-host root@<ip>
+```
+
+### `desktop`
+
+Desktop NixOS configuration with the same structure (automatic module
+importation, `userdata.nix`), without the remote-deployment machinery.
+
+```bash
+nix flake init -t github:Pierre-Thibault/my-nix-configuration-template#desktop
+```
+
+## Configuration
+
+Both templates read per-host data from `config/userdata.nix`:
 
 ```nix
 {
-  hostname = "";
-  system = "x86_64";
-  userfullname = "";
-  username = "";
+  hostname = "myhost";          # also the attribute name in nixosConfigurations
+  system = "x86_64-linux";      # or "aarch64-linux"
+  mainDisk = "/dev/sda";        # qemu-guest only; /dev/vda on some providers
+  opensshKeys = [ "ssh-ed25519 AAAA..." ];
+  stateVersion = "26.05";       # set once at install time, never change
 }
 ```
 
-Add your NixOS modules under `modules/` — they will be picked up automatically by `configuration.nix` via `my-lib.modules`.
+Every `.nix` file under `modules/` is imported automatically — add or
+remove a module file, no `imports` list to maintain.
 
-Build and switch to the new configuration:
+## Notes
 
-```sh
-sudo nixos-rebuild switch --flake .#<hostname>
-```
-
-## Structure
-
-```
-nixos-26.05/
-├── flake.nix           # Flake inputs and nixosConfigurations output
-├── configuration.nix   # Top-level NixOS configuration (auto-imports modules/)
-└── config/
-    └── userdata.nix     # Per-machine user/host settings
-```
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+- The `nixosConfigurations` attribute is named after `userdata.hostname`;
+  with a matching machine hostname, plain `nixos-rebuild switch --flake .`
+  resolves it automatically.
+- Flakes only see files tracked by Git: `git add` new files (including
+  `config/userdata.nix`) before building.
